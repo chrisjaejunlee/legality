@@ -1,0 +1,643 @@
+import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
+
+const prisma = new PrismaClient()
+
+async function main() {
+  console.log('Seeding database...')
+
+  await prisma.emergencyAccess.deleteMany()
+  await prisma.lawyerConnection.deleteMany()
+  await prisma.savedCase.deleteMany()
+  await prisma.query.deleteMany()
+  await prisma.subscription.deleteMany()
+  await prisma.user.deleteMany()
+  await prisma.case.deleteMany()
+  await prisma.lawyer.deleteMany()
+
+  const hashedPassword = await bcrypt.hash('password123', 10)
+
+  const demoUser = await prisma.user.create({
+    data: {
+      email: 'demo@legality.app',
+      password: hashedPassword,
+      name: 'Demo User',
+      verified: true,
+      disclaimerAccepted: true,
+      disclaimerAcceptedAt: new Date(),
+      subscription: {
+        create: {
+          tier: 'PREMIUM',
+          status: 'ACTIVE',
+        },
+      },
+    },
+  })
+
+  const cases = await Promise.all([
+    prisma.case.create({
+      data: {
+        title: 'Johnson v. State Farm Mutual Automobile Insurance Co.',
+        category: 'Car Accident',
+        jurisdiction: 'Los Angeles County, CA',
+        summary: 'The plaintiff was involved in a rear-end collision at an intersection controlled by a traffic signal. The defendant insurance company disputed liability, claiming the plaintiff had violated traffic laws by entering the intersection on a yellow light. The court found that the plaintiff had entered the intersection lawfully and that the defendant driver was negligent in following too closely.',
+        outcome: 'Favorable',
+        reasoning: 'California follows comparative negligence principles. The court determined the defendant was 85% at fault for following too closely, while the plaintiff was 15% at fault for entering on a yellow light. Plaintiff recovered damages reduced by their percentage of fault.',
+        year: 2023,
+        citations: 'Cal. Civ. Code § 1714',
+        keywords: 'rear-end collision, insurance dispute, traffic signal, comparative negligence',
+        severity: 'High',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Martinez v. Downtown Parking Garage LLC',
+        category: 'Car Accident',
+        jurisdiction: 'Cook County, IL',
+        summary: 'A vehicle sustained significant damage when the parking garage\'s automatic gate malfunctioned and descended onto the car while the owner was exiting. The garage operator claimed the plaintiff had failed to wait for the gate to fully rise before proceeding. Security footage was inconclusive.',
+        outcome: 'Settled',
+        reasoning: 'The case settled during mediation. The parking garage\'s maintenance records showed the gate had been flagged for repair two weeks prior but no service had been completed. Settlement favored the plaintiff.',
+        year: 2022,
+        citations: '735 ILCS 5/2-1005',
+        keywords: 'parking garage, automatic gate, property damage, premises liability',
+        severity: 'Medium',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Chen v. Regional Medical Center',
+        category: 'Car Accident',
+        jurisdiction: 'Harris County, TX',
+        summary: 'An ambulance responding to an emergency call collided with a civilian vehicle at an intersection. The civilian driver claimed they had a green light and the ambulance ran a red light. The ambulance driver testified emergency lights and sirens were active.',
+        outcome: 'Unfavorable',
+        reasoning: 'Texas law grants emergency vehicles certain privileges but does not absolve them of all liability. The court found the ambulance driver failed to exercise due caution at the intersection. However, damages were reduced due to the civilian driver\'s failure to yield.',
+        year: 2023,
+        citations: 'Tex. Transp. Code § 546.001',
+        keywords: 'emergency vehicle, ambulance, intersection accident, traffic laws',
+        severity: 'High',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Williams v. Thompson',
+        category: 'Self-Defense',
+        jurisdiction: 'Maricopa County, AZ',
+        summary: 'The defendant was charged with assault after physically restraining an individual who had entered their property uninvited and made threatening gestures. The defendant claimed they used only the force necessary to protect themselves and their family.',
+        outcome: 'Favorable',
+        reasoning: 'Arizona recognizes the "stand your ground" doctrine. The court found the defendant had a reasonable belief of imminent danger and used proportionate force. The individual\'s unauthorized entry onto private property supported the self-defense claim.',
+        year: 2023,
+        citations: 'Ariz. Rev. Stat. § 13-405',
+        keywords: 'self-defense, stand your ground, assault, home invasion',
+        severity: 'High',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'People v. Okonkwo',
+        category: 'Self-Defense',
+        jurisdiction: 'Kings County, NY',
+        summary: 'The defendant was involved in an altercation outside a nightclub. Security footage showed the victim throwing the first punch, but the defendant continued to strike the victim even after they fell to the ground and stopped advancing.',
+        outcome: 'Unfavorable',
+        reasoning: 'While self-defense is recognized under New York law, the use of force must be proportionate and must cease when the threat subsides. The court found the defendant used excessive force beyond what was necessary for self-protection.',
+        year: 2022,
+        citations: 'N.Y. Penal Law § 35.15',
+        keywords: 'self-defense, excessive force, nightclub altercation, proportionality',
+        severity: 'High',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Garcia v. National Bar Association Mutual',
+        category: 'Self-Defense',
+        jurisdiction: 'Miami-Dade County, FL',
+        summary: 'A bar patron sued another patron for injuries sustained during what they claimed was an unprovoked attack. The defendant claimed they acted in defense after the plaintiff made aggressive statements and moved toward them in a threatening manner.',
+        outcome: 'Settled',
+        reasoning: 'Florida\'s "stand your ground" law provides immunity from civil liability for those who use force in self-defense. The case settled confidentially, with both parties acknowledging the incident involved mutual combatants.',
+        year: 2023,
+        citations: 'Fla. Stat. § 776.012',
+        keywords: 'bar fight, mutual combat, stand your ground, Florida',
+        severity: 'Medium',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Anderson v. Westbrook Property Management',
+        category: 'Property Dispute',
+        jurisdiction: 'Wayne County, MI',
+        summary: 'A tenant alleged that the property management company wrongfully retained their security deposit after claiming damage to the apartment. The tenant provided photo documentation of the apartment\'s condition at move-in and move-out.',
+        outcome: 'Favorable',
+        reasoning: 'Michigan law requires landlords to return security deposits within 30 days or provide an itemized statement of deductions. The property management failed to provide timely documentation and could not prove the damage existed before the tenant\'s occupancy.',
+        year: 2023,
+        citations: 'Mich. Comp. Laws § 554.308',
+        keywords: 'security deposit, landlord tenant, property damage, Michigan',
+        severity: 'Low',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Patel v. City of San Francisco',
+        category: 'Property Dispute',
+        jurisdiction: 'San Francisco County, CA',
+        summary: 'A homeowner challenged the city\'s assessment that their property was subject to historic preservation restrictions after they attempted to renovate their Victorian home. The city claimed the property met criteria for historical significance.',
+        outcome: 'Ongoing',
+        reasoning: 'The case is pending review by the historic preservation board. The homeowner argues they received no notice when they purchased the property. The city argues the restrictions were recorded before the purchase.',
+        year: 2024,
+        citations: 'Cal. Gov. Code § 37361',
+        keywords: 'historic preservation, property rights, renovation, HOA',
+        severity: 'Medium',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Nguyen v. Coastal Condominium Association',
+        category: 'Property Dispute',
+        jurisdiction: 'Broward County, FL',
+        summary: 'A condominium owner was fined by the HOA for installing solar panels on their roof. The owner claimed Florida law prohibits HOA restrictions on solar energy devices. The HOA claimed the panels violated aesthetic guidelines.',
+        outcome: 'Favorable',
+        reasoning: 'Florida Statute § 163.04 prohibits HOAs from restricting solar panel installation. The court found the statute preempted the HOA\'s governing documents. The HOA was ordered to rescind the fines.',
+        year: 2023,
+        citations: 'Fla. Stat. § 163.04',
+        keywords: 'HOA, solar panels, property rights, Florida',
+        severity: 'Medium',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Rodriguez v. TechStart Industries',
+        category: 'Employment Issue',
+        jurisdiction: 'Santa Clara County, CA',
+        summary: 'A software engineer was terminated after reporting what they believed to be code of conduct violations by their manager. The employee claimed wrongful termination in violation of California\'s whistleblower protection laws. The company claimed performance-related termination.',
+        outcome: 'Settled',
+        reasoning: 'The case settled confidentially. Internal communications obtained during discovery showed the manager had discussed terminating the employee shortly after the complaint was filed, supporting the retaliation claim.',
+        year: 2023,
+        citations: 'Cal. Gov. Code § 8540',
+        keywords: 'whistleblower, wrongful termination, retaliation, workplace',
+        severity: 'High',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Thompson v. MegaMart Corporation',
+        category: 'Employment Issue',
+        jurisdiction: 'Collin County, TX',
+        summary: 'A retail employee was terminated after refusing to work overtime due to religious observances. The employee claimed religious discrimination and failure to accommodate under Title VII. The employer claimed business necessity for overtime.',
+        outcome: 'Favorable',
+        reasoning: 'Title VII requires employers to reasonably accommodate religious practices unless it causes undue hardship. The court found MegaMart failed to explore accommodation options and terminated the employee without adequate consideration.',
+        year: 2022,
+        citations: '42 U.S.C. § 2000e(j)',
+        keywords: 'religious discrimination, workplace accommodation, overtime, Title VII',
+        severity: 'High',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Kim v. Downtown Restaurant Group',
+        category: 'Employment Issue',
+        jurisdiction: 'New York County, NY',
+        summary: 'A restaurant worker sued for unpaid overtime wages, claiming they regularly worked more than 40 hours per week without proper compensation. The employer maintained detailed records showing the worker was properly paid.',
+        outcome: 'Unfavorable',
+        reasoning: 'The court found the employer\'s records were accurate and complete. The worker could not provide evidence to contradict the time records and acknowledged签字 on pay stubs confirming hours worked.',
+        year: 2023,
+        citations: 'N.Y. Lab. Law § 191',
+        keywords: 'unpaid overtime, wage theft, restaurant industry, labor law',
+        severity: 'Medium',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Brown v. Independent Contractor Network',
+        category: 'Contract Issue',
+        jurisdiction: 'King County, WA',
+        summary: 'A delivery driver classified as an independent contractor sued for benefits typically provided to employees, claiming they were misclassified. The company provided a detailed independent contractor agreement.',
+        outcome: 'Settled',
+        reasoning: 'The ABC test for independent contractor status in Washington favored the worker in several areas. The company agreed to reclassify similar workers and pay a settlement to the plaintiff.',
+        year: 2023,
+        citations: 'Wash. Rev. Code § 49.46.065',
+        keywords: 'independent contractor, misclassification, gig economy, benefits',
+        severity: 'Medium',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Turner v. Digital Services LLC',
+        category: 'Contract Issue',
+        jurisdiction: 'Travis County, TX',
+        summary: 'A freelance designer claimed breach of contract when a client refused to pay the final installment for completed work. The client claimed the work did not meet specifications outlined in the project brief.',
+        outcome: 'Favorable',
+        reasoning: 'The contract specified deliverables and payment milestones. The designer provided evidence of client approvals at each milestone. The court found the client breached the contract by withholding final payment.',
+        year: 2023,
+        citations: 'Tex. Bus. & Com. Code § 1.308',
+        keywords: 'freelance contract, breach of contract, payment dispute, deliverables',
+        severity: 'Medium',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Davis v. Major League Sports Franchise',
+        category: 'Contract Issue',
+        jurisdiction: 'Los Angeles County, CA',
+        summary: 'A season ticket holder sued for refund of playoff game tickets when the games were cancelled due to labor dispute. The ticket agreement contained a force majeure clause excluding pandemic and labor actions.',
+        outcome: 'Unfavorable',
+        reasoning: 'The court found the force majeure clause was clear and unambiguous. Labor disputes fall within the scope of force majeure, and the ticket holder assumed this risk when purchasing tickets.',
+        year: 2022,
+        citations: 'Cal. Civ. Code § 1518',
+        keywords: 'season tickets, force majeure, contract dispute, sports',
+        severity: 'Low',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Lee v. Neighborhood Grocery Chain',
+        category: 'Car Accident',
+        jurisdiction: 'Cook County, IL',
+        summary: 'A customer slipped and fell in a grocery store parking lot, allegedly due to unmarked wet pavement from a recent power washing. The store claimed adequate warning signs were posted.',
+        outcome: 'Settled',
+        reasoning: 'Illinois premises liability law requires property owners to maintain safe conditions. Surveillance footage showed the warning signs were placed only after the plaintiff had already fallen. Settlement favored the plaintiff.',
+        year: 2023,
+        citations: '745 ILCS 75/1',
+        keywords: 'slip and fall, premises liability, grocery store, parking lot',
+        severity: 'Medium',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'White v. City Transit Authority',
+        category: 'Car Accident',
+        jurisdiction: 'Philadelphia County, PA',
+        summary: 'A pedestrian was struck by a city bus while crossing at a marked crosswalk with the signal. The bus driver claimed the pedestrian entered suddenly. The pedestrian suffered significant injuries.',
+        outcome: 'Favorable',
+        reasoning: 'Pennsylvania law requires drivers to yield to pedestrians in crosswalks. The bus driver\'s testimony was contradicted by physical evidence showing the pedestrian was visible for several seconds before impact.',
+        year: 2023,
+        citations: '75 Pa. Cons. Stat. § 3544',
+        keywords: 'pedestrian accident, bus accident, crosswalk, traffic violation',
+        severity: 'High',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Harris v. Downtown Nightclub',
+        category: 'Self-Defense',
+        jurisdiction: 'Clark County, NV',
+        summary: 'A nightclub bouncer was charged with assault after using force to remove an intoxicated patron who had become aggressive toward other guests. The patron claimed excessive force.',
+        outcome: 'Favorable',
+        reasoning: 'Nevada recognizes the use of force to prevent crimes and eject trespassers. The bouncer\'s use of force was deemed reasonable given the patron\'s level of intoxication and aggressive behavior documented in witness statements.',
+        year: 2022,
+        citations: 'Nev. Rev. Stat. § 200.280',
+        keywords: 'bouncer, nightclub, trespassing, reasonable force',
+        severity: 'Medium',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Taylor v. Residential Management Group',
+        category: 'Property Dispute',
+        jurisdiction: 'Marion County, IN',
+        summary: 'A tenant sought damages for alleged habitability violations including persistent mold, broken heating system, and pest infestation. The landlord claimed the issues were caused by tenant negligence.',
+        outcome: 'Favorable',
+        reasoning: 'Indiana requires landlords to maintain fit and habitable premises. Inspectors documented all alleged violations. The landlord could not prove the tenant caused the conditions. Tenant awarded rent abatement and repair costs.',
+        year: 2023,
+        citations: 'Ind. Code § 32-31-7',
+        keywords: 'habitability, mold, heating, pest infestation, tenant rights',
+        severity: 'Medium',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Washington v. Federal Express Corporation',
+        category: 'Employment Issue',
+        jurisdiction: 'DeKalb County, GA',
+        summary: 'A delivery driver was terminated after a vehicle accident while making deliveries. The company cited safety policy violations. The driver claimed the accident was unavoidable due to road conditions.',
+        outcome: 'Settled',
+        reasoning: 'Georgia employment law does not prevent at-will termination. However, evidence showed the company had not disciplined drivers in similar situations. Settlement reflected the inconsistency in enforcement.',
+        year: 2023,
+        citations: 'Ga. Code § 34-9-2',
+        keywords: 'workplace accident, termination, delivery driver, employment policy',
+        severity: 'Medium',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Campbell v. Software Consulting Partners',
+        category: 'Contract Issue',
+        jurisdiction: 'Hillsborough County, FL',
+        summary: 'A consulting firm sued a client for breach of contract after the client terminated the agreement early. The contract contained a 90-day termination notice requirement.',
+        outcome: 'Favorable',
+        reasoning: 'Florida contract law requires parties to honor termination provisions. The client terminated without proper notice and failed to pay early termination fees specified in the agreement.',
+        year: 2023,
+        citations: 'Fla. Stat. § 672.703',
+        keywords: 'consulting contract, early termination, breach of contract, Florida',
+        severity: 'Medium',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Moore v. State Department of Transportation',
+        category: 'Property Dispute',
+        jurisdiction: 'Franklin County, OH',
+        summary: 'A property owner challenged the state\'s use of eminent domain to acquire a portion of their land for highway expansion. The state claimed the taking was for public use.',
+        outcome: 'Ongoing',
+        reasoning: 'The case involves questions of whether the taking is for public use and whether the offered compensation is fair. The property owner argues alternate routes were available that would have less impact.',
+        year: 2024,
+        citations: 'Ohio Const. Art. I, § 19',
+        keywords: 'eminent domain, condemnation, property rights, highway',
+        severity: 'High',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Jackson v. National Retail Corporation',
+        category: 'Employment Issue',
+        jurisdiction: 'Suffolk County, MA',
+        summary: 'A retail employee was terminated two weeks after reporting sexual harassment by a supervisor to HR. The employer claimed the termination was unrelated performance issues that had been documented.',
+        outcome: 'Favorable',
+        reasoning: 'Massachusetts law prohibits retaliation against employees who report harassment. The timing alone raised an inference of retaliation. The employer\'s documentation was found to be pretextual.',
+        year: 2023,
+        citations: 'Mass. Gen. Laws ch. 151B, § 4',
+        keywords: 'sexual harassment, retaliation, wrongful termination, Massachusetts',
+        severity: 'High',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Robinson v. Regional Hospital Network',
+        category: 'Car Accident',
+        jurisdiction: 'Baltimore County, MD',
+        summary: 'A hospital employee was injured in a parking garage accident while commuting to work. The garage was owned by a third party. The employee\'s auto insurance and worker\'s compensation claims were disputed.',
+        outcome: 'Unfavorable',
+        reasoning: 'Maryland courts found the injury occurred in a parking facility not part of the hospital premises. Worker\'s compensation did not apply as the injury did not occur during employment duties. Auto insurance exclusions applied.',
+        year: 2023,
+        citations: 'Md. Code, Lab. & Empl. § 9-202',
+        keywords: 'parking garage, workers compensation, commute injury, Maryland',
+        severity: 'High',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Clark v. Home Security Services',
+        category: 'Contract Issue',
+        jurisdiction: 'Orange County, FL',
+        summary: 'A homeowner sued a security company for breach of contract after their home was burglarized despite an active alarm system. The contract limited the company\'s liability.',
+        outcome: 'Unfavorable',
+        reasoning: 'The contract contained clear liability limitations and did not guarantee prevention of theft. Florida courts upheld the contract terms as enforceable. The homeowner assumed risk of loss.',
+        year: 2022,
+        citations: 'Fla. Stat. § 817.40',
+        keywords: 'security system, breach of contract, liability limitation, theft',
+        severity: 'Medium',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Lewis v. Downtown Apartments',
+        category: 'Property Dispute',
+        jurisdiction: 'Denver County, CO',
+        summary: 'A tenant sued for return of pet deposit after their dog bit someone in the building. The landlord retained the deposit for "damages and liability." The lease prohibited certain dog breeds.',
+        outcome: 'Favorable',
+        reasoning: 'Colorado law limits landlord deductions to actual damages. The bite incident involved a third party and was not property damage. The breed restriction was added after the tenant signed the lease.',
+        year: 2023,
+        citations: 'Colo. Rev. Stat. § 38-12-511',
+        keywords: 'pet deposit, dog bite, lease violation, Colorado',
+        severity: 'Low',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Walker v. Metropolitan Taxicab Company',
+        category: 'Car Accident',
+        jurisdiction: 'District of Columbia',
+        summary: 'A passenger was injured when the taxi driver made an emergency stop to avoid another vehicle. The passenger claimed the driver was negligent. The taxi company claimed sudden stop was necessary.',
+        outcome: 'Settled',
+        reasoning: 'DC law requires common carriers to exercise highest degree of care. Investigation showed the driver had adequate time to brake safely. Settlement favored the passenger.',
+        year: 2023,
+        citations: 'D.C. Code § 28-1-101',
+        keywords: 'taxi accident, passenger injury, common carrier, Washington DC',
+        severity: 'Medium',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Hall v. Security Personnel Inc.',
+        category: 'Self-Defense',
+        jurisdiction: 'Orleans Parish, LA',
+        summary: 'A security guard was prosecuted for assault after detaining a suspected shoplifter. The suspect claimed excessive force was used. Store surveillance supported the suspect\'s claims of being struck after complying.',
+        outcome: 'Unfavorable',
+        reasoning: 'Louisiana law permits reasonable force for citizen\'s arrest of shoplifters. The court found the force used exceeded what was necessary. Criminal charges were reduced but the guard faced civil liability.',
+        year: 2023,
+        citations: 'La. R.S. 14:103',
+        keywords: 'security guard, shoplifting, citizens arrest, excessive force',
+        severity: 'Medium',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'Young v. Tech Startup Inc.',
+        category: 'Employment Issue',
+        jurisdiction: 'San Francisco County, CA',
+        summary: 'An employee sued for wrongful termination after being laid off during a company restructuring. The employee claimed age discrimination as part of the layoffs affecting primarily older workers.',
+        outcome: 'Settled',
+        reasoning: 'Federal ADEA and California FEHA protect workers over 40 from age discrimination. Statistical analysis showed the layoffs disproportionately affected older workers. Settlement included policy changes.',
+        year: 2023,
+        citations: 'Cal. Gov. Code § 12940',
+        keywords: 'wrongful termination, age discrimination, restructuring, layoff',
+        severity: 'High',
+      },
+    }),
+    prisma.case.create({
+      data: {
+        title: 'King v. Commercial Property Investments',
+        category: 'Property Dispute',
+        jurisdiction: 'Davidson County, TN',
+        summary: 'A commercial tenant claimed constructive eviction when the landlord failed to maintain functioning HVAC during summer months. The landlord claimed the tenant damaged the system.',
+        outcome: 'Favorable',
+        reasoning: 'Tennessee law requires landlords to maintain commercial premises in good repair. Maintenance records showed the system was not serviced per the lease requirements. Tenant awarded damages and lease termination.',
+        year: 2023,
+        citations: 'Tenn. Code Ann. § 66-28-304',
+        keywords: 'constructive eviction, commercial lease, HVAC, Tennessee',
+        severity: 'Medium',
+      },
+    }),
+  ])
+
+  const lawyers = await Promise.all([
+    prisma.lawyer.create({
+      data: {
+        name: 'Sarah Mitchell',
+        firm: 'Mitchell & Associates Personal Injury',
+        email: 'sarah.mitchell@mitchelllaw.com',
+        phone: '(310) 555-0101',
+        specialties: 'Personal Injury,Car Accident,Insurance Disputes',
+        rating: 4.9,
+        reviewCount: 247,
+        yearsExperience: 18,
+        location: 'Los Angeles County, CA',
+        bio: 'Sarah Mitchell has dedicated her career to helping accident victims get the justice they deserve. With over 18 years of experience in personal injury law, she has recovered millions for her clients.',
+      },
+    }),
+    prisma.lawyer.create({
+      data: {
+        name: 'Michael Chen',
+        firm: 'Chen Criminal Defense',
+        email: 'mchen@chencriminaldefense.com',
+        phone: '(415) 555-0202',
+        specialties: 'Criminal Defense,Self-Defense,Assault',
+        rating: 4.8,
+        reviewCount: 189,
+        yearsExperience: 15,
+        location: 'San Francisco County, CA',
+        bio: 'Former prosecutor turned defense attorney. Michael Chen understands how cases are built from both sides, allowing him to craft the strongest possible defense for his clients.',
+      },
+    }),
+    prisma.lawyer.create({
+      data: {
+        name: 'Jennifer Rodriguez',
+        firm: 'Rodriguez Property Law',
+        email: 'jrodriguez@rodrlaw.com',
+        phone: '(312) 555-0303',
+        specialties: 'Property Law,Landlord Tenant,Real Estate',
+        rating: 4.7,
+        reviewCount: 156,
+        yearsExperience: 12,
+        location: 'Cook County, IL',
+        bio: 'Jennifer specializes in residential and commercial property disputes. She is known for her thorough approach and her commitment to protecting her clients\' property rights.',
+      },
+    }),
+    prisma.lawyer.create({
+      data: {
+        name: 'David Thompson',
+        firm: 'Thompson Employment Law',
+        email: 'dthompson@thompsonemployment.com',
+        phone: '(214) 555-0404',
+        specialties: 'Employment Law,Wrongful Termination,Discrimination',
+        rating: 4.9,
+        reviewCount: 312,
+        yearsExperience: 20,
+        location: 'Dallas County, TX',
+        bio: 'David Thompson is a leading employment attorney in Texas. He has successfully represented employees against major corporations in wage, discrimination, and wrongful termination cases.',
+      },
+    }),
+    prisma.lawyer.create({
+      data: {
+        name: 'Amanda Foster',
+        firm: 'Foster Contract Law',
+        email: 'afoster@fostercontracts.com',
+        phone: '(206) 555-0505',
+        specialties: 'Contract Law,Business Disputes,Freelance Issues',
+        rating: 4.6,
+        reviewCount: 98,
+        yearsExperience: 10,
+        location: 'King County, WA',
+        bio: 'Amanda Foster helps businesses and individuals navigate complex contract negotiations and disputes. She specializes in technology and freelance contracts.',
+      },
+    }),
+    prisma.lawyer.create({
+      data: {
+        name: 'Robert Williams',
+        firm: 'Williams Auto Accident Lawyers',
+        email: 'rwilliams@williamsauto.com',
+        phone: '(305) 555-0606',
+        specialties: 'Car Accident,Pedestrian Accidents,Insurance',
+        rating: 4.8,
+        reviewCount: 203,
+        yearsExperience: 16,
+        location: 'Miami-Dade County, FL',
+        bio: 'Robert Williams has been fighting for accident victims in South Florida for over 16 years. He offers free consultations and works on contingency.',
+      },
+    }),
+    prisma.lawyer.create({
+      data: {
+        name: 'Lisa Park',
+        firm: 'Park Legal Services',
+        email: 'lpark@parklegal.com',
+        phone: '(602) 555-0707',
+        specialties: 'Personal Injury,Premises Liability,Slip and Fall',
+        rating: 4.7,
+        reviewCount: 134,
+        yearsExperience: 11,
+        location: 'Maricopa County, AZ',
+        bio: 'Lisa Park combines aggressive advocacy with compassionate client care. She has recovered substantial settlements for slip and fall and premises liability clients.',
+      },
+    }),
+    prisma.lawyer.create({
+      data: {
+        name: 'James O\'Brien',
+        firm: 'O\'Brien Business Law',
+        email: 'jobrien@obrienbusiness.com',
+        phone: '(617) 555-0808',
+        specialties: 'Business Law,Contracts,Employment',
+        rating: 4.5,
+        reviewCount: 87,
+        yearsExperience: 14,
+        location: 'Suffolk County, MA',
+        bio: 'James O\'Brien helps Massachusetts businesses navigate employment law and contracts. HePreventive counsel is his specialty, helping businesses avoid legal problems before they start.',
+      },
+    }),
+    prisma.lawyer.create({
+      data: {
+        name: 'Maria Santos',
+        firm: 'Santos Immigration & Civil Rights',
+        email: 'msantos@santoslaw.com',
+        phone: '(713) 555-0909',
+        specialties: 'Civil Rights,Discrimination,Employment',
+        rating: 4.9,
+        reviewCount: 278,
+        yearsExperience: 19,
+        location: 'Harris County, TX',
+        bio: 'Maria Santos is a champion for civil rights in Texas. She has successfully litigated numerous discrimination cases and workplace retaliation claims.',
+      },
+    }),
+    prisma.lawyer.create({
+      data: {
+        name: 'Kevin Brown',
+        firm: 'Brown Landlord Tenant Law',
+        email: 'kbrown@browntenantlaw.com',
+        phone: '(303) 555-1010',
+        specialties: 'Landlord Tenant,Housing Law,Eviction',
+        rating: 4.4,
+        reviewCount: 76,
+        yearsExperience: 8,
+        location: 'Denver County, CO',
+        bio: 'Kevin Brown focuses exclusively on landlord-tenant matters in Colorado. He represents both landlords and tenants, giving him unique insight into both sides of disputes.',
+      },
+    }),
+    prisma.lawyer.create({
+      data: {
+        name: 'Nicole Edwards',
+        firm: 'Edwards Accident Reconstruction',
+        email: 'nedwards@edwardslaw.com',
+        phone: '(215) 555-1111',
+        specialties: 'Car Accident,Truck Accidents,Wrongful Death',
+        rating: 4.8,
+        reviewCount: 167,
+        yearsExperience: 13,
+        location: 'Philadelphia County, PA',
+        bio: 'Nicole Edwards works with accident reconstruction experts to build strong cases for victims of motor vehicle accidents. Her attention to detail has led to numerous successful outcomes.',
+      },
+    }),
+    prisma.lawyer.create({
+      data: {
+        name: 'Christopher Lee',
+        firm: 'Lee Technology & IP',
+        email: 'clee@leetechlaws.com',
+        phone: '(408) 555-1212',
+        specialties: 'Intellectual Property,Contracts,Startup',
+        rating: 4.7,
+        reviewCount: 112,
+        yearsExperience: 9,
+        location: 'Santa Clara County, CA',
+        bio: 'Christopher Lee helps tech startups and freelancers protect their work and navigate complex technology contracts. He speaks both legal and technical languages.',
+      },
+    }),
+  ])
+
+  console.log('Database seeded successfully!')
+  console.log(`Created ${cases.length} cases and ${lawyers.length} lawyers`)
+  console.log(`Created demo user: demo@legality.app / password123`)
+}
+
+main()
+  .catch((e) => {
+    console.error(e)
+    process.exit(1)
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
+  })

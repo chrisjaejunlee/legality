@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                     String              @id @default(cuid())
+  email                  String              @unique
+  password               String
+  name                   String?
+  verified               Boolean             @default(false)
+  verificationId         String?
+  disclaimerAccepted     Boolean             @default(false)
+  disclaimerAcceptedAt   DateTime?
+  subscription           Subscription?
+  queries                Query[]
+  savedCases             SavedCase[]
+  lawyerConnections      LawyerConnection[]
+  emergencyUses          EmergencyAccess[]
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+}
+
+model Subscription {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  user             User      @relation(fields: [userId], references: [id])
+  tier             String    @default("FREE")
+  status           String    @default("ACTIVE")
+  expiresAt        DateTime?
+  stripeCustomerId String?
+  createdAt        DateTime  @default(now())
+}
+
+model Query {
+  id                  String    @id @default(cuid())
+  userId              String?
+  user                User?     @relation(fields: [userId], references: [id])
+  category            String
+  description         String
+  location            String?
+  incidentDate        DateTime?
+  severity            String
+  contextFlags        String?
+  aiSummary           String?
+  aiRecommendations   String?
+  riskAssessment      String?
+  matchedCases        String?
+  status              String    @default("PENDING")
+  ipAddress           String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
+model Case {
+  id           String      @id @default(cuid())
+  title        String
+  category     String
+  jurisdiction String
+  summary      String
+  outcome      String
+  reasoning    String
+  year         Int
+  citations    String?
+  keywords     String?
+  severity     String?
+  createdAt    DateTime    @default(now())
+  savedBy      SavedCase[]
+}
+
+model SavedCase {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  caseId    String
+  case      Case     @relation(fields: [caseId], references: [id])
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, caseId])
+}
+
+model Lawyer {
+  id             String              @id @default(cuid())
+  name           String
+  firm           String
+  email          String?
+  phone          String?
+  specialties    String
+  rating         Float
+  reviewCount    Int
+  yearsExperience Int
+  location       String
+  bio            String?
+  avatarUrl      String?
+  connections    LawyerConnection[]
+  createdAt      DateTime            @default(now())
+}
+
+model LawyerConnection {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  lawyerId    String
+  lawyer      Lawyer   @relation(fields: [lawyerId], references: [id])
+  connectedAt DateTime @default(now())
+}
+
+model EmergencyAccess {
+  id        String   @id @default(cuid())
+  ipAddress String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  usedAt    DateTime @default(now())
+}
