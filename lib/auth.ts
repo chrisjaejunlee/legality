@@ -16,6 +16,7 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Please enter your email and password')
         }
 
+        const { prisma } = await import('./prisma')
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
           include: { subscription: true },
